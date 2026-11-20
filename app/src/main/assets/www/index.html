@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="initial-scale=1, minimum-scale=1, width=device-width, viewport-fit=cover">
+<title>나와 대화하는 아바타</title>
+<link rel="stylesheet" href="style.css?v=20261120i">
+</head>
+<body>
+<div id="app">
+  <h1>나와 대화하는 아바타</h1>
+
+  <!-- 아바타 화면 -->
+  <section id="avatarBox" class="panel">
+    <div class="avatar-stage">
+      <canvas id="avatar" width="480" height="480"></canvas>
+      <div class="avatar-actions">
+        <button id="regenBtn" type="button">아바타 생성</button>
+        <div id="avatarNotice" class="avatar-notice" role="status"></div>
+      </div>
+      <div id="avatarLoading" class="avatar-loading" role="status" aria-live="polite" hidden>
+        <span class="avatar-spinner" aria-hidden="true"></span><span>아바타 생성 중…</span>
+      </div>
+    </div>
+    <div id="avatarName">아바타 화면</div>
+    <div class="activity-summary">
+      <div id="appliedSettings" class="applied-settings" aria-live="polite">
+        <div>대화모델: <span id="currentChatModel"></span></div>
+        <div>음성모델 TTS: <span id="currentVoiceModel"></span></div>
+        <div>음성인식 STT: <span id="currentStt"></span></div>
+        <div>페르소나: <span id="currentPersona"></span></div>
+      </div>
+      <div id="chatActivity" class="chat-activity" role="status" hidden>
+        <span class="avatar-spinner" aria-hidden="true"></span><span id="chatActivityLabel"></span>
+      </div>
+    </div>
+    <div id="micRow">
+      <button id="micBtn" title="누른 상태에서 말하세요">
+        <span id="micIcon">🎤</span>
+        <span id="micHint">누른 상태에서 말하세요</span>
+      </button>
+    </div>
+    <div id="askRow">
+      <input id="askInput" type="text" placeholder="또는 메세지를 입력하세요" autocomplete="off">
+      <button id="sendBtn">전송</button>
+    </div>
+  </section>
+
+  <!-- 말한 게 text로 표시되는 부분 -->
+  <section id="speechBox" class="panel">
+    <div id="me" class="line me"><b>나</b><span id="meText">…</span></div>
+    <div id="bot" class="line bot"><b id="botName">아바타</b><span id="botText">…</span></div>
+    <div id="status">대기 중</div>
+    <button id="playReadySpeech" type="button" hidden>생성된 음성 재생</button>
+  </section>
+
+  <!-- 페르소나 설정 -->
+  <section id="settings" class="panel">
+    <div class="persona-header"><h2>페르소나 (Persona)</h2><button id="savePersona" type="button">저장</button></div>
+    <div id="personaStatus" role="status" class="persona-status"></div>
+    <textarea id="persona" rows="3" aria-label="페르소나" placeholder="작성 예시:너는 귀엽고 애교많은 고양이야."></textarea>
+
+    <div class="grid">
+      <label><span>Temperature</span><output>1.8</output><input id="temp" type="range" min="0" max="2" step="0.05" value="1.8"></label>
+      <label><span>Max tokens</span><output>160</output><input id="maxTokens" type="range" min="40" max="800" step="10" value="160"></label>
+      <label><span>Top-p</span><output>0.90</output><input id="topP" type="range" min="0" max="1" step="0.05" value="0.9"></label>
+      <label><span>History turns</span><output>3</output><input id="turns" type="range" min="0" max="10" step="1" value="3"></label>
+      <label><span>Speech rate</span><output>1.00</output><input id="rate" type="range" min="0.5" max="1.6" step="0.05" value="1.0"></label>
+      <label><span>Pitch</span><output>1.00</output><input id="pitch" type="range" min="0.2" max="2" step="0.05" value="1.0"></label>
+    </div>
+
+  </section>
+
+  <section id="voiceSettings" class="panel">
+    <h2>음성 및 아바타 설정</h2>
+    <label class="text-only-toggle"><input id="textOnly" type="checkbox"><span>텍스트로만 재생하기</span></label>
+    <fieldset id="speechSettings" aria-label="음성 설정">
+    <div class="rowline voice-select-row">
+      <span>TTS 엔진</span>
+      <details id="voicePicker">
+        <summary id="voicePickerCurrent">기기 기본 음성</summary>
+        <div id="voicePickerList" aria-label="TTS 엔진 선택"></div>
+      </details>
+      <select id="voiceMode" hidden aria-label="TTS 엔진">
+        <optgroup label="기본 음성"><option value="device">기기 기본 음성</option></optgroup>
+        <optgroup label="Supertone"><option value="supertonicPhone">Supertonic 3 · 한국어</option></optgroup>
+        <optgroup label="Mycroft AI"><option value="mimicPhone">Mimic 3 · 한국어</option></optgroup>
+        <optgroup label="MyShell"><option value="meloPhone">MeloTTS · 한국어</option></optgroup>
+        <optgroup label="Hexgrad"><option value="kokoroPhone">Kokoro · 영어</option></optgroup>
+        <optgroup label="Google">
+          <option value="gemini">Gemini 3.8 Flash-Lite TTS</option><option value="gemini38">Gemini 3.8 Flash TTS</option><option value="gemini31">Gemini 3.1 Flash TTS Preview</option>
+        </optgroup>
+        <optgroup label="ElevenLabs">
+          <option value="eleven">ElevenLabs v4</option><option value="eleven3">ElevenLabs v3</option><option value="eleven2">ElevenLabs Multilingual v2</option><option value="elevenFlash">ElevenLabs Flash v2.5</option>
+        </optgroup>
+        <optgroup label="네오사피엔스">
+          <option value="ssfm-v31">타입캐스트 SSFM 3.1</option><option value="ssfm-v30">타입캐스트 SSFM 3.0</option><option value="ssfm-v21">타입캐스트 SSFM 2.1</option>
+        </optgroup>
+        <optgroup label="Cartesia"><option value="cartesia">Sonic 3.6</option></optgroup>
+        <optgroup label="Alibaba Qwen 팀 · 노트북 미리보기" data-preview>
+          <option value="qwen">Qwen3-TTS · Sohee</option><option value="qwenDesign">Qwen3-TTS · VoiceDesign</option>
+        </optgroup>
+        <optgroup label="Alibaba Qwen 팀 + MyShell · 노트북 미리보기" data-preview>
+          <option value="openvoice">Speak Mia · Qwen + OpenVoice</option>
+        </optgroup>
+      </select>
+    </div>
+    <div id="voiceKeySettings" class="rowline" hidden>
+      <label id="voiceKeyLabel" for="voiceApiKey">API 키</label>
+      <div class="api-key-row"><input id="voiceApiKey" type="password" autocomplete="new-password" aria-describedby="voiceKeyNote" placeholder="API 키를 붙여넣으세요"><button id="clearVoiceKey" type="button" disabled>키 삭제</button></div>
+      <p id="voiceKeyNote" class="api-key-note">입력한 키는 브라우저 local storage에 자동 저장됩니다. 키 삭제시 storage에서도 삭제 됩니다.</p>
+    </div>
+    <div id="freeSpeechSettings" class="tts-provider" hidden>
+      <label id="cartesiaConfirmation" hidden><input id="cartesiaFreeConfirm" type="checkbox"> Cartesia 무료 플랜임을 확인했습니다.</label>
+      <p id="freeSpeechNote" class="gemini-note"></p>
+      <div id="typecastCreditRow" class="credit-row" hidden><span id="typecastCredits" role="status">타입캐스트 크레딧: 확인 전</span><button id="refreshTypecast" type="button">새로고침</button></div>
+    </div>
+    <div id="localSpeechSettings" class="tts-provider" hidden>
+      <p id="localSpeechNote" class="gemini-note"></p>
+    </div>
+    <div id="elevenSettings" hidden>
+      <p class="gemini-note">기본 음성 목록에서 페르소나에 맞는 음성을 자동으로 선택합니다. API 키에 음성 읽기 권한이 필요합니다.</p>
+      <div class="credit-row"><span id="elevenCredits" role="status">ElevenLabs 크레딧: 확인 전</span><button id="refreshCredits" type="button">새로고침</button></div>
+    </div>
+    <div class="tts-apply-row"><button id="applyVoiceMode" type="button">AI 음성 저장 및 적용</button><span id="voiceApplyStatus" role="status"></span></div>
+    <details class="tts-provider">
+      <summary>음성 비교 테스트</summary>
+      <label class="rowline">테스트 문장<input id="speechSample" type="text" maxlength="160" value="안녕하세요. 오늘은 여러 가지 목소리를 비교해 볼까요?"></label>
+      <button type="button" id="playSpeechSample">적용된 음성 듣기</button>
+      <p id="speechSampleStatus" role="status"></p>
+    </details>
+    </fieldset>
+    <label class="rowline">아바타 스타일
+      <select id="style">
+        <option value="3D">3D (입체)</option>
+        <option value="2D">2D (flat)</option>
+      </select>
+    </label>
+
+  </section>
+
+  <section class="panel api-panel">
+    <div class="api-settings">
+      <h2>AI API 설정 · 답변 작성</h2>
+      <label class="rowline">API Provider (서비스)
+        <select id="provider">
+          <option value="openai">OpenAI</option><option value="gemini">Google Gemini</option><option value="exaone">LG EXAONE</option>
+          <option value="local-gemma">(로컬) Google Gemma 4 E2B</option><option value="local-qwen">(로컬) Alibaba Qwen3.5 2B</option>
+        </select>
+      </label>
+      <fieldset id="cloudApiSettings" class="cloud-api-settings">
+      <div class="rowline">
+        <label for="apiKey">API 키</label>
+        <div class="api-key-row"><input id="apiKey" type="password" autocomplete="new-password" aria-describedby="chatKeyNote" placeholder="API 키를 붙여넣으세요"><button id="clearApi" type="button" disabled>키 삭제</button></div>
+        <p id="chatKeyNote" class="api-key-note">입력한 키는 브라우저 local storage에 자동 저장됩니다. 키 삭제시 storage에서도 삭제 됩니다.</p>
+      </div>
+      <label class="rowline">Model (모델)<select id="modelChoice"></select></label>
+      <label class="rowline">Model ID (직접 입력 가능)<input id="model" type="text"></label>
+      <input id="baseUrl" type="hidden">
+      </fieldset>
+      <button id="installLocalModel" type="button" hidden>모델 다운로드</button>
+      <p id="apiStatus" role="status"></p>
+    </div>
+  </section>
+
+  <section class="panel reset-panel">
+    <div class="btns">
+      <button id="clearBtn" type="button">설정·대화 초기화 (API 키 모두 삭제)</button>
+    </div>
+    <p id="resetStatus" class="reset-status" role="status"></p>
+  </section>
+</div>
+<script src="app.js?v=20261120j"></script>
+</body>
+</html>

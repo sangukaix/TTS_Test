@@ -1,0 +1,32 @@
+plugins { id 'com.android.application' }
+
+dependencies {
+    implementation files('libs/sherpa-onnx-1.13.8.aar', 'libs/commons-compress-1.21.jar')
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.2.21'
+}
+
+android {
+    namespace 'com.mbc.avatarchat'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.mbc.avatarchat'
+        minSdk 23
+        targetSdk 34
+        versionCode 14
+        versionName '1.13'
+        testInstrumentationRunner 'com.mbc.avatarchat.SpeechProbe'
+    }
+    buildTypes {
+        debug { applicationIdSuffix '.test' }
+        share {
+            initWith release
+            applicationIdSuffix '.share'
+            signingConfig signingConfigs.debug
+        }
+    }
+    testBuildType = providers.gradleProperty('testShare').isPresent() ? 'share' : 'debug'
+    packaging { jniLibs { excludes += ['**/libsherpa-onnx-c-api.so', '**/libsherpa-onnx-cxx-api.so'] } }
+    androidResources { noCompress += ['bz2', 'onnx'] }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+

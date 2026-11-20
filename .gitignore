@@ -1,0 +1,15 @@
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+.env*
+.idea/
+.deps/
+dist/
+__pycache__/
+*.apk
+/app/libs/*.aar
+/app/libs/*.jar
+/app/src/main/assets/tts/
+/app/src/main/jniLibs/
